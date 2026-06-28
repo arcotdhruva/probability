@@ -2,5 +2,122 @@
 title: "Probability"
 author: "Dhruva"
 format: html
+execute:
+  echo: false
 ---
 
+
+```{r}
+library(tidyverse)
+#| message: false
+```
+
+```{r}
+#| cache: true
+throw_dice <- function(n, weights = rep(1/6, 6)) {
+  die1 <- sample(1:6, size = n, replace = TRUE, prob = weights)
+  die2 <- sample(1:6, size = n, replace = TRUE, prob = weights)
+  die1 + die2
+}
+
+```
+
+```{r}
+biased <- c(rep(0.75 / 5, 5), 0.25)
+ns <- c(10, 20, 50, 100, 1000)
+
+set.seed(10)
+trials <- lapply(ns, throw_dice, weights = biased)
+
+op <- par(mfrow = c(1, 5), mar = c(4, 3, 2, 1))
+for (i in seq_along(ns)) {
+  hist(
+    trials[[i]],
+    breaks = seq(1.5, 12.5, by = 1),
+    xaxt   = "n",
+    xlab   = "Sum",
+    ylab   = "Count",
+    main   = paste0("n = ", ns[i])
+  )
+  axis(1, at = 2:12, cex.axis = 0.65)
+}
+par(op)
+```
+
+```{r}
+op <- par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+fair   <- rep(1/6, 6)
+biased <- c(rep(0.14, 5), 0.30)
+
+barplot(
+  fair,
+  names.arg = 1:6,
+  xlab      = "Face",
+  ylab      = "Probability",
+  main      = "Fair die",
+  ylim      = c(0, 0.35)
+)
+
+barplot(
+  biased,
+  names.arg = 1:6,
+  xlab      = "Face",
+  ylab      = "Probability",
+  main      = "Loaded die",
+  ylim      = c(0, 0.35)
+)
+
+par(op)
+```
+
+```{r}
+library(tibble)
+
+fair   <- rep(1/6, 6)
+biased <- c(rep(0.14, 5), 0.30)
+
+tibble(
+  face             = 1:6,
+  p_fair           = fair,
+  p_loaded         = biased,
+  likelihood_ratio = biased / fair
+)
+```
+
+```{r}
+#| cache: true
+fair   <- rep(1/6, 6)
+biased <- c(rep(0.14, 5), 0.30)
+
+log_lr <- function(rolls) {
+  log(biased[rolls] / fair[rolls])
+}
+
+fair   <- rep(1/6, 6)
+biased <- c(rep(0.14, 5), 0.30)
+
+log_lr <- function(rolls) {
+  log(biased[rolls] / fair[rolls])
+}
+```
+
+```{r}
+biased <- c(0.14, 0.14, 0.14, 0.14, 0.14, 0.30)
+
+stopping_time <- function() {
+  rolls <- sample(1:6, size = 500, replace = TRUE, prob = biased)
+  posterior <- 1 / (1 + exp(-cumsum(log_lr(rolls))))
+  which(posterior >= 0.95)[1]
+}
+
+set.seed(10)
+stopping_times <- replicate(1000, stopping_time())
+
+hist(
+  stopping_times,
+  xlab  = "Roll at which posterior first crosses 0.95",
+  ylab  = "Count",
+  main  = "1,000 simulated stopping times (loaded die, threshold = 0.95)"
+)
+```
